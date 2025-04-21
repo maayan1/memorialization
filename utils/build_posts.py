@@ -9,6 +9,7 @@ from utils.paths import *
 
 
 def get_font(size: int):
+    print(f'in get_font function')
     """Generated a font object with the required size"""
     return ImageFont.truetype(
         "resources/Rubik-Regular.ttf", size, layout_engine=ImageFont.Layout.RAQM
@@ -16,6 +17,7 @@ def get_font(size: int):
 
 
 def _get_background(casualty: Casualty):
+    print(f'in _get_background function')
     """Return a background image, matching the casualty's gender"""
     backgrounds = {
         Gender.FEMALE: "resources/female.png",
@@ -27,6 +29,7 @@ def _get_background(casualty: Casualty):
 
 
 def _get_image(casualty: Casualty) -> Image:
+    print('in _get_image function')
     """Return the casualty's image, opened and resized"""
     casualty_img = Image.open(
         casualty.post_main_image
@@ -41,12 +44,12 @@ def _get_image(casualty: Casualty) -> Image:
 
 
 def _add_text(
-    text: str,
-    font_size: int,
-    bold: bool,
-    increase_offset: int,
-    draw: ImageDraw.Draw,
-    y_axis_offset: int,
+        text: str,
+        font_size: int,
+        bold: bool,
+        increase_offset: int,
+        draw: ImageDraw.Draw,
+        y_axis_offset: int,
 ):
     """Add text to the post according to the required parameters"""
     font = get_font(font_size)
@@ -68,21 +71,21 @@ def _add_text(
 
 
 def _add_degree(
-    casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
+        casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
 ) -> ImageDraw.Draw:
     """Add the casualty's degree to the post"""
     return _add_text(casualty.degree, 45, False, 50, draw, y_axis_offset)
 
 
 def _add_name(
-    casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
+        casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
 ) -> ImageDraw.Draw:
     """Add the casualty's name to the post"""
     return _add_text(f'{casualty.full_name} ז"ל', 54, True, 65, draw, y_axis_offset)
 
 
 def _add_department(
-    casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
+        casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
 ) -> ImageDraw.Draw:
     """Add the casualty's department to the post"""
     if casualty.department:
@@ -92,7 +95,7 @@ def _add_department(
 
 
 def _add_details(
-    casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
+        casualty: Casualty, draw: ImageDraw.Draw, y_axis_offset: int
 ) -> ImageDraw.Draw:
     """Add additional text about the casualty to the post"""
     text = [
@@ -142,8 +145,8 @@ def _get_post_path(casualty: Casualty) -> str:
     post_path = f"{post_dir}/{casualty.full_name}.jpg"
     return post_path
 
-
-def _create_casualty_post(casualty_data: dict) -> None:
+    # def _create_casualty_post(casualty_data: dict) -> None: MM i changed this func
+def create_casualty_post_worker(casualty_data: dict) -> dict:
     """Create the casualty's post and save it"""
     casualty: Casualty = Casualty.from_dict(casualty_data)
     try:
@@ -170,8 +173,10 @@ def _create_casualty_post(casualty_data: dict) -> None:
 def create_casualties_posts(given_casualties_data: List[dict]) -> List[dict]:
     """Create post for all the casualties and save it"""
     process_pool = multiprocessing.Pool()
-    updated_casualties_data = process_pool.map(
-        _create_casualty_post, given_casualties_data
-    )
+    # MM also here
+    # updated_casualties_data = process_pool.map(
+    #     _create_casualty_post, given_casualties_data
+    # )
+    updated_casualties_data = process_pool.map(create_casualty_post_worker, given_casualties_data)
     process_pool.close()
     return updated_casualties_data

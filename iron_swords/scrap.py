@@ -72,6 +72,96 @@ def re_search(pattern: str, txt: str) -> Optional[str]:
     match = re.search(pattern, txt)
     return match.group(1) if match else None
 
+# i change this function for use validations
+
+# def collect_casualty(url: str) -> Casualty:
+#     """Scrap the casualty page, parse his data and return it"""
+#     with webdriver.Chrome(
+#             service=ChromeService(ChromeDriverManager().install()), options=chrome_options
+#     ) as driver:
+#         driver.get(url)
+#         WebDriverWait(driver, 60).until(
+#             EC.presence_of_element_located((By.CLASS_NAME, "soldier-image"))
+#         )
+#
+#         section = (
+#             driver.find_element(By.CLASS_NAME, "share-section")
+#             .get_attribute("innerText")
+#             .replace("\n\n", "\n")
+#         )
+#
+#         full_name = section.split("\n")[0].replace(' ז"ל', "")
+#         degree, full_name = full_name.split(" ", 1)
+#         if full_name[0] == "(":
+#             degree_cont, full_name = full_name.split(" ", 1)
+#             degree = degree + " " + degree_cont
+#
+#         date_of_death_str = re_search("(?:נפל.? ביום .*?)(\d+\.\d+\.\d+)", section)
+#         date_of_death_str = (
+#             datetime.strptime(date_of_death_str, "%d.%m.%Y").strftime("%Y-%m-%d")
+#             if date_of_death_str
+#             else None
+#         )
+#
+#         age = re_search("(?:בן|בת) (\d+)", section)
+#         age = int(age) if age else None
+#
+#         gender = (
+#             Gender.MALE
+#             if "בן" in section
+#             else Gender.FEMALE
+#             if "בת" in section
+#             else None
+#         )
+#
+#         living_city = re_search("(?:, מ)(.*?)(?:,)", section)
+#         grave_city = re_search("(בית העלמין.*?)(?:\\.)", section)
+#
+#         post_main_image, post_additional_images = None, []
+#         small_img = driver.find_element(By.CLASS_NAME, "soldier-image").find_element(
+#             By.CLASS_NAME, "img-fluid"
+#         )
+#         img_url = (
+#             driver.find_element(By.CLASS_NAME, "soldier-image")
+#             .find_element(By.CLASS_NAME, "img-fluid")
+#             .get_attribute("src")
+#         )
+#         if img_url and not "candle" in img_url:
+#             Path(IMAGES_DIR).mkdir(parents=True, exist_ok=True)
+#             small_img_path = os.path.join(
+#                 os.getcwd(), IMAGES_DIR, f"{full_name}_{age}_{living_city}_small.png"
+#             )
+#             big_img_path = os.path.join(
+#                 os.getcwd(), IMAGES_DIR, f"{full_name}_{age}_{living_city}_big.png"
+#             )
+#
+#             small_img.screenshot(small_img_path)
+#             post_main_image = small_img_path
+#
+#             img_url = img_url[: img_url.rindex("?")]
+#             driver.get(img_url)
+#             WebDriverWait(driver, 60).until(
+#                 EC.presence_of_element_located((By.TAG_NAME, "img"))
+#             )
+#             big_img = driver.find_element(By.TAG_NAME, "img")
+#             big_img.screenshot(big_img_path)
+#             post_additional_images = [big_img_path]
+#
+#         casualty = Casualty(
+#             data_url=url,
+#             full_name=full_name,
+#             degree=degree,
+#             department=section.split("\n")[1],
+#             living_city=living_city,
+#             grave_city=grave_city,
+#             age=age,
+#             gender=gender,
+#             date_of_death_str=date_of_death_str,
+#             post_main_image=post_main_image,
+#             post_additional_images=post_additional_images,
+#         )
+#
+#     return casualty
 
 def collect_casualty(url: str) -> Casualty:
     """Scrap the casualty page, parse his data and return it"""
@@ -127,11 +217,15 @@ def collect_casualty(url: str) -> Casualty:
         )
         if img_url and not "candle" in img_url:
             Path(IMAGES_DIR).mkdir(parents=True, exist_ok=True)
+
+            # סניטיזציה של השם כדי למנוע תווים לא חוקיים
+            sanitized_name = sanitize_filename(f"{full_name}_{age}_{living_city}")
+
             small_img_path = os.path.join(
-                os.getcwd(), IMAGES_DIR, f"{full_name}_{age}_{living_city}_small.png"
+                os.getcwd(), IMAGES_DIR, f"{sanitized_name}_small.png"
             )
             big_img_path = os.path.join(
-                os.getcwd(), IMAGES_DIR, f"{full_name}_{age}_{living_city}_big.png"
+                os.getcwd(), IMAGES_DIR, f"{sanitized_name}_big.png"
             )
 
             small_img.screenshot(small_img_path)
@@ -162,6 +256,15 @@ def collect_casualty(url: str) -> Casualty:
 
     return casualty
 
+def sanitize_filename(filename: str) -> str:
+    """Sanitize the filename to avoid illegal characters"""
+    # Replace any non-ASCII characters with underscores or remove them
+    filename = re.sub(r'[^\x00-\x7F]+', '_', filename)
+    # Replace any other illegal characters with underscores
+    illegal_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+    for char in illegal_characters:
+        filename = filename.replace(char, '_')
+    return filename
 
 def add_casualty_images_from_external_resources(
         casualty: Casualty, instagram_user: str, intagram_password: str, redownload: bool
