@@ -4,6 +4,8 @@ import re
 from datetime import datetime
 from typing import List
 
+from typing import Optional
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -12,22 +14,20 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from iron_swords.paths import IMAGES_DIR
 
-
 from utils.casualty import Casualty, Gender
 from utils.collect_external_images import find_images_in_external_images_pool
 from utils.collect_external_posts import find_images_in_external_posts
-
 
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--headless")
 
 
-def collect_casualties_urls(main_url: str, page_limit: int | None) -> List[str]:
+def collect_casualties_urls(main_url: str, page_limit: Optional[int] = None) -> List[str]:
     """Return a list with the URLs of all the casualties pages"""
     urls = []
     pages = 1
     with webdriver.Chrome(
-        service=ChromeService(ChromeDriverManager().install()), options=chrome_options
+            service=ChromeService(ChromeDriverManager().install()), options=chrome_options
     ) as driver:
         # Collect links to all the casualties pages
         driver.get(main_url)
@@ -42,7 +42,7 @@ def collect_casualties_urls(main_url: str, page_limit: int | None) -> List[str]:
                 casualty_items = driver.find_elements(By.CLASS_NAME, "casualty-item")
                 for casualty_item in casualty_items:
                     url = casualty_item.find_element(
-                        By.CLASS_NAME, "btn-link-text"
+                        By.XPATH, ".."
                     ).get_attribute("href")
                     urls.append(url)
 
@@ -50,7 +50,8 @@ def collect_casualties_urls(main_url: str, page_limit: int | None) -> List[str]:
 
                 pages += 1
 
-                if page_limit and page_limit < pages:
+                #if page_limit and page_limit < pages:
+                if page_limit < 2:
                     break
 
                 # Go to the next page
@@ -66,7 +67,7 @@ def collect_casualties_urls(main_url: str, page_limit: int | None) -> List[str]:
     return urls
 
 
-def re_search(pattern: str, txt: str) -> str | None:
+def re_search(pattern: str, txt: str) -> Optional[str]:
     """Search for a match and return it."""
     match = re.search(pattern, txt)
     return match.group(1) if match else None
@@ -75,7 +76,7 @@ def re_search(pattern: str, txt: str) -> str | None:
 def collect_casualty(url: str) -> Casualty:
     """Scrap the casualty page, parse his data and return it"""
     with webdriver.Chrome(
-        service=ChromeService(ChromeDriverManager().install()), options=chrome_options
+            service=ChromeService(ChromeDriverManager().install()), options=chrome_options
     ) as driver:
         driver.get(url)
         WebDriverWait(driver, 60).until(
@@ -163,13 +164,14 @@ def collect_casualty(url: str) -> Casualty:
 
 
 def add_casualty_images_from_external_resources(
-    casualty: Casualty, instagram_user: str, intagram_password: str, redownload: bool
+        casualty: Casualty, instagram_user: str, intagram_password: str, redownload: bool
 ) -> None:
     """Look for the casualty name in other posts. If exists, add images from these posts."""
+    print(f'casualty.full_name:{casualty.full_name},instagram_user: {instagram_user}, intagram_password:{intagram_password}')
     casualty.post_additional_images.extend(
         find_images_in_external_posts(
             full_name=casualty.full_name,
-            instagram_accounts=["remember_haravot_barzel"],
+            instagram_accounts=["remember_haravot_barzel"],#remember_haravot_barzel
             instagram_user=instagram_user,
             intagram_password=intagram_password,
             redownload=redownload,
@@ -186,11 +188,12 @@ def add_casualty_images_from_external_resources(
 
 
 def collect_casualties_data(
-    casualties_data: List[dict],
-    instagram_user: str,
-    intagram_password: str,
-    page_limit: int | None = None,
-    recollect: bool = False,
+        casualties_data: List[dict],
+        instagram_user: str,
+        intagram_password: str,
+        page_limit: int | None = None,
+        #page_limit: Optional[int] = None,
+        recollect: bool = False,
 ) -> List[dict]:
     """Collect casualties data from the IDF website"""
     casualties: List[Casualty] = [
@@ -218,8 +221,8 @@ def collect_casualties_data(
                 if casualty.full_name in exist_names:
                     exist_casualty = exist_names[casualty.full_name]
                     if (
-                        exist_casualty.age == casualty.age
-                        and exist_casualty.living_city == casualty.living_city
+                            exist_casualty.age == casualty.age
+                            and exist_casualty.living_city == casualty.living_city
                     ):
                         if exist_casualty.post_published:
                             exist_casualty = exist_names[casualty.full_name]
@@ -251,12 +254,13 @@ def collect_casualties_data(
     redownload = True
     for casualty in casualties:
         if not casualty.post_published:
-            add_casualty_images_from_external_resources(
-                casualty,
-                instagram_user,
-                intagram_password,
-                redownload=redownload,
-            )
+            # add_casualty_images_from_external_resources(
+            #     casualty,
+            #     instagram_user,
+            #     intagram_password,
+            #     redownload=redownload,
+            # )
+            print(f'casualty: {casualty}, instagram_user{instagram_user}, intagram_password:{intagram_password}')
             redownload = False
             if not casualty.post_main_image and casualty.post_additional_images:
                 casualty.post_main_image = casualty.post_additional_images[0]
