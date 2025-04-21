@@ -1,4 +1,7 @@
 import os
+
+from PIL import features
+
 from pathlib import Path
 import re
 from datetime import datetime
