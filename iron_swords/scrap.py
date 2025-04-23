@@ -400,7 +400,7 @@ def collect_casualties_urls(main_url: str, page_limit: Optional[int] = None) -> 
     urls = []
     pages = 1
     with webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install()), options=chrome_options
+            service=ChromeService(), options=chrome_options
     ) as driver:
         driver.get(main_url)
         while True:
@@ -442,7 +442,7 @@ def sanitize_filename(filename: str) -> str:
 def collect_casualty(url: str) -> Casualty:
     """Scrap the casualty page, parse his data and return it"""
     with webdriver.Chrome(
-            service=ChromeService(ChromeDriverManager().install()), options=chrome_options
+            service=ChromeService(), options=chrome_options
     ) as driver:
         driver.get(url)
         WebDriverWait(driver, 60).until(
